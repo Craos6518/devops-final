@@ -1,0 +1,90 @@
+###############################################################################
+# Proyecto final DevOps - estudiante13
+#
+# La primera linea (name:) es OBLIGATORIA en el servidor compartido: evita que
+# los 35 estudiantes compartan el mismo proyecto, red y volumen de Docker.
+#
+#   docker compose up -d --build
+#   curl http://178.128.14.98:8013/health
+###############################################################################
+name: estudiante13
+
+services:
+  # --------------------------------------------------------------------- db
+  db:
+    container_name: est13_db
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tareas}
+      POSTGRES_USER: ${POSTGRES_USER:-estudiante13}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD en el archivo .env}
+      TZ: America/Bogota
+    # Sin "ports": la base de datos NO se publica. Solo se accede por la red
+    # interna de Docker en el puerto 5432 (nunca por el 5445 del servidor).
+    volumes:
+      - datos_db:/var/lib/postgresql/data
+    networks:
+      - red_est13
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-estudiante13} -d ${POSTGRES_DB:-tareas}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    mem_limit: 384m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # -------------------------------------------------------------------- api
+  api:
+    container_name: est13_api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: estudiante13/api-tareas:1.0.0
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      ESTUDIANTE: ${ESTUDIANTE:-estudiante13}
+      DB_HOST: db
+      DB_PORT: 5432
+    ports:
+      # API_PORT=8013 en el .env  ->  http://178.128.14.98:8013
+      - "${API_PORT:-8013}:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - red_est13
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:5000/health', timeout=3)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    mem_limit: 384m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  datos_db:
+    # Nombre explicito: los datos sobreviven a "docker compose down"
+    # (solo se borran con "docker compose down -v").
+    name: estudiante13_datos
+
+networks:
+  red_est13:
+    name: estudiante13_red
+    driver: bridge
