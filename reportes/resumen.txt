@@ -1,0 +1,11 @@
+Fecha      : 2026-11-17T20:07:39Z
+Estudiante : estudiante13
+Imagen     : estudiante13/api-tareas:1.0.0
+Equipo     : taller-utp
+HERRAMIENTA | ESTADO                    | ARCHIVO
+---------------------------------------------------------------
+Gitleaks   | sin hallazgos             | reportes/gitleaks.json
+Semgrep    | sin hallazgos             | reportes/semgrep.json
+Syft       | SBOM generado (105 paquetes) | reportes/syft.json, syft.txt
+Trivy      | CRITICAL:0 HIGH:48        | reportes/trivy.txt
+Hadolint   | sin hallazgos             | reportes/hadolint.txt
